@@ -2,11 +2,17 @@
 import { ref } from 'vue'
 import type { Location } from '@/types'
 
-defineProps<{ location: Location; pageNum?: number }>()
+const props = defineProps<{ location: Location; pageNum?: number }>()
 
-const lightboxSrc = ref('')
-function openLightbox(src: string) { lightboxSrc.value = src }
-function closeLightbox() { lightboxSrc.value = '' }
+const lightboxIndex = ref<number | null>(null)
+function openLightbox(index: number) { lightboxIndex.value = index }
+function closeLightbox() { lightboxIndex.value = null }
+function prevPhoto() {
+  if (lightboxIndex.value !== null && lightboxIndex.value > 0) lightboxIndex.value--
+}
+function nextPhoto() {
+  if (lightboxIndex.value !== null && lightboxIndex.value < props.location.photos.length - 1) lightboxIndex.value++
+}
 </script>
 
 <template>
@@ -43,7 +49,7 @@ function closeLightbox() { lightboxSrc.value = '' }
           <div
             v-for="(photo,pidx) in location.photos" :key="pidx"
             class="thumb-item" :class="{ 'thumb-first': pidx===0 && location.photos.length>=5 }"
-            @click="openLightbox(photo.src)"
+            @click="openLightbox(pidx)"
           >
             <img :src="photo.src" :alt="photo.caption||location.name" loading="lazy"
               @error="(e)=>((e.target as HTMLImageElement).style.display='none')" />
@@ -62,22 +68,33 @@ function closeLightbox() { lightboxSrc.value = '' }
       </div>
 
       <!-- 评论 -->
-      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
-        <div style="display:flex;align-items:center;gap:0.3em;flex-shrink:0;">
-          <img :src="location.reviewerAvatar" :alt="location.reviewerName"
-            style="width:clamp(18px,3.5%,24px);height:clamp(18px,3.5%,24px);border-radius:50%;background:#F5EDE3;flex-shrink:0;"
-            @error="(e)=>((e.target as HTMLImageElement).style.display='none')" />
-          <span style="font-size:clamp(0.55rem,0.9vw,0.65rem);font-weight:500;">{{ location.reviewerName }}</span>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;gap:0.5em;">
+        <div v-for="(review, index) in location.reviews" :key="index" style="display:flex;flex-direction:column;min-height:0;">
+          <div style="display:flex;align-items:center;gap:0.3em;flex-shrink:0;">
+            <img :src="review.reviewer.avatar" :alt="review.reviewer.name"
+              loading="lazy"
+              style="width:clamp(18px,3.5%,24px);height:clamp(18px,3.5%,24px);border-radius:50%;background:#F5EDE3;flex-shrink:0;"
+              @error="(e)=>((e.target as HTMLImageElement).style.display='none')" />
+            <span style="font-size:clamp(0.55rem,0.9vw,0.65rem);font-weight:500;">{{ review.reviewer.name }}</span>
+          </div>
+          <p style="font-size:clamp(0.5rem,0.8vw,0.62rem);line-height:1.6;margin-top:0.25em;overflow:hidden;flex:1;">{{ review.reviewComment }}</p>
         </div>
-        <p style="font-size:clamp(0.5rem,0.8vw,0.62rem);line-height:1.6;margin-top:0.25em;overflow:hidden;flex:1;">{{ location.reviewText }}</p>
       </div>
     </div>
 
     <!-- 灯箱 -->
     <Teleport to="body">
-      <div v-if="lightboxSrc" class="lightbox" @click="closeLightbox">
-        <img :src="lightboxSrc" class="lightbox-img" @click.stop />
+      <div v-if="lightboxIndex !== null" class="lightbox" @click="closeLightbox">
+        <template v-if="location.photos[lightboxIndex]">
+          <img :src="location.photos[lightboxIndex].src" class="lightbox-img" @click.stop />
+          <div v-if="location.photos[lightboxIndex].caption" class="lightbox-caption" @click.stop>{{ location.photos[lightboxIndex].caption }}</div>
+        </template>
+
+        <button v-if="location.photos.length > 1 && lightboxIndex > 0" class="lightbox-prev" @click.stop="prevPhoto">❮</button>
+        <button v-if="location.photos.length > 1 && lightboxIndex < location.photos.length - 1" class="lightbox-next" @click.stop="nextPhoto">❯</button>
+
         <button class="lightbox-close" @click="closeLightbox">✕</button>
+        <div v-if="location.photos.length > 1" class="lightbox-counter" @click.stop>{{ lightboxIndex + 1 }} / {{ location.photos.length }}</div>
       </div>
     </Teleport>
   </div>
@@ -145,5 +162,47 @@ function closeLightbox() { lightboxSrc.value = '' }
   transition: background 0.3s;
 }
 .lightbox-close:hover { background: rgba(255,255,255,0.4); }
+.lightbox-prev, .lightbox-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.lightbox-prev:hover, .lightbox-next:hover { background: rgba(255,255,255,0.4); }
+.lightbox-prev { left: 16px; }
+.lightbox-next { right: 16px; }
+.lightbox-counter {
+  position: absolute;
+  bottom: 24px;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.9rem;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 12px;
+  border-radius: 12px;
+  pointer-events: none;
+  letter-spacing: 0.1em;
+}
+.lightbox-caption {
+  position: absolute;
+  bottom: 60px;
+  color: #fff;
+  font-size: 1rem;
+  background: rgba(0,0,0,0.5);
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 80vw;
+}
 .addr-link:hover { color: #4A90D9 !important; }
 </style>

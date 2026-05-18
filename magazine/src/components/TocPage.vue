@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { Location } from '@/types'
 
-defineProps<{ locations: Location[] }>()
+defineProps<{ 
+  locations: Location[]
+  page?: number
+  total?: number
+}>()
 </script>
 
 <template>
@@ -11,7 +15,7 @@ defineProps<{ locations: Location[] }>()
       <div class="text-center flex-shrink-0 mb-2">
         <h2 class="font-sans font-bold text-sumi tracking-widest" style="font-size: clamp(1.1rem, 2vw, 1.4rem);">目 录</h2>
         <div class="w-6 h-px bg-cha mx-auto mt-2 mb-1"></div>
-        <p class="font-sans text-iwa tracking-wider" style="font-size: clamp(0.55rem, 0.9vw, 0.65rem);">INDEX</p>
+        <p class="font-sans text-iwa tracking-wider" style="font-size: clamp(0.55rem, 0.9vw, 0.65rem);">INDEX <span v-if="total && total > 1">({{ page }}/{{ total }})</span></p>
       </div>
 
       <!-- 列表 -->
@@ -40,7 +44,7 @@ defineProps<{ locations: Location[] }>()
       </div>
 
       <p class="text-center font-sans text-kare tracking-wider mt-2 flex-shrink-0" style="font-size: clamp(0.5rem, 0.8vw, 0.6rem);">
-        全 {{ locations.length }} 店 · 群友实地探访
+        本页 {{ locations.length }} 店 · 群友实地探访
       </p>
     </div>
   </div>

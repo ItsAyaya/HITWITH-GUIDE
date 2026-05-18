@@ -7,6 +7,18 @@ export interface Photo {
   isScreenshot?: boolean
 }
 
+/** 评论者 */
+export interface Reviewer {
+  name: string;
+  avatar: string;
+}
+
+/** 评论 */
+export interface Review {
+  reviewer: Reviewer;
+  reviewComment: string;
+}
+
 /** 地点 */
 export interface Location {
   id: number
@@ -14,12 +26,7 @@ export interface Location {
   category: string
   stars: number
   photos: Photo[]
-  /** 合并后的全部评论文字 */
-  reviewText: string
-  /** 评论者昵称 */
-  reviewerName: string
-  /** 评论者头像路径（相对于 public/） */
-  reviewerAvatar: string
+  reviews: Review[]
   address: string
   mapKeyword: string
   coordinates?: [number, number]

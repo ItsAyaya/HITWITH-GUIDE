@@ -28,7 +28,21 @@ onUnmounted(() => {
 const allPages = computed(() => {
   const arr: any[] = []
   arr.push({ id: 'cover', type: 'cover' })
-  arr.push({ id: 'toc', type: 'toc' })
+  
+  // 按照每页 15 个店铺对目录进行分页
+  const itemsPerPage = 15
+  const tocPagesCount = Math.ceil(locations.length / itemsPerPage) || 1
+  for (let i = 0; i < tocPagesCount; i++) {
+    const pageLocs = locations.slice(i * itemsPerPage, (i + 1) * itemsPerPage)
+    arr.push({ 
+      id: `toc-${i + 1}`, 
+      type: 'toc', 
+      locationsSlice: pageLocs,
+      pageIndex: i + 1,
+      totalPages: tocPagesCount
+    })
+  }
+
   locations.forEach((loc) => {
     arr.push({ id: `loc-${loc.id}`, type: 'location', loc: loc })
   })
@@ -120,7 +134,7 @@ defineExpose({ handleExport })
         <div :key="'spread-' + currentSpread" class="spread-row" :class="{'spread-solo': spreadLayout[currentSpread]?.length === 1}">
           <template v-for="page in spreadLayout[currentSpread]" :key="page.id">
             <CoverPage v-if="page.type === 'cover'" />
-            <TocPage v-else-if="page.type === 'toc'" :locations="locations" />
+            <TocPage v-else-if="page.type === 'toc'" :locations="page.locationsSlice" :page="page.pageIndex" :total="page.totalPages" />
             <MagazinePage v-else-if="page.type === 'location'" :location="page.loc" :page-num="page.loc.id" />
             <BackCover v-else-if="page.type === 'back'" />
           </template>
@@ -131,7 +145,11 @@ defineExpose({ handleExport })
     <!-- PDF 导出时隐藏渲染所有页（确保与可见页同宽高比） -->
     <div v-if="exportMode" id="pdf-export-container" style="position:absolute;left:-9999px;top:0;display:flex;flex-wrap:wrap;gap:12px;padding:12px;">
       <div style="width:500px;aspect-ratio:1/1.414;flex-shrink:0;display:flex;"><CoverPage /></div>
-      <div style="width:500px;aspect-ratio:1/1.414;flex-shrink:0;display:flex;"><TocPage :locations="locations" /></div>
+      <template v-for="page in allPages.filter(p => p.type === 'toc')" :key="page.id">
+        <div style="width:500px;aspect-ratio:1/1.414;flex-shrink:0;display:flex;">
+          <TocPage :locations="page.locationsSlice" :page="page.pageIndex" :total="page.totalPages" />
+        </div>
+      </template>
       <div v-for="loc in locations" :key="'exp-'+loc.id" style="width:500px;aspect-ratio:1/1.414;flex-shrink:0;display:flex;">
         <MagazinePage :location="loc" :page-num="loc.id" />
       </div>
